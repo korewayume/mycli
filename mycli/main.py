@@ -1,5 +1,6 @@
 import os
 import sys
+exit = sys.exit
 import traceback
 import logging
 import threading
@@ -31,25 +32,25 @@ from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 
-from .packages.special.main import NO_QUERY
-from .packages.prompt_utils import confirm, confirm_destructive_query
-from .packages.tabular_output import sql_format
-from .packages import special
-from .packages.special.favoritequeries import FavoriteQueries
-from .sqlcompleter import SQLCompleter
-from .clitoolbar import create_toolbar_tokens_func
-from .clistyle import style_factory, style_factory_output
-from .sqlexecute import FIELD_TYPES, SQLExecute
-from .clibuffer import cli_is_multiline
-from .completion_refresher import CompletionRefresher
-from .config import (write_default_config, get_mylogin_cnf_path,
+from mycli.packages.special.main import NO_QUERY
+from mycli.packages.prompt_utils import confirm, confirm_destructive_query
+from mycli.packages.tabular_output import sql_format
+from mycli.packages import special
+from mycli.packages.special.favoritequeries import FavoriteQueries
+from mycli.sqlcompleter import SQLCompleter
+from mycli.clitoolbar import create_toolbar_tokens_func
+from mycli.clistyle import style_factory, style_factory_output
+from mycli.sqlexecute import FIELD_TYPES, SQLExecute
+from mycli.clibuffer import cli_is_multiline
+from mycli.completion_refresher import CompletionRefresher
+from mycli.config import (write_default_config, get_mylogin_cnf_path,
                      open_mylogin_cnf, read_config_files, str_to_bool,
                      strip_matching_quotes)
-from .key_bindings import mycli_bindings
-from .lexer import MyCliLexer
-from .__init__ import __version__
-from .compat import WIN
-from .packages.filepaths import dir_path_exists, guess_socket_location
+from mycli.key_bindings import mycli_bindings
+from mycli.lexer import MyCliLexer
+from mycli import __version__
+from mycli.compat import WIN
+from mycli.packages.filepaths import dir_path_exists, guess_socket_location
 
 import itertools
 
@@ -1140,17 +1141,18 @@ def cli(database, user, host, port, socket, password, dbname,
             mycli.dsn_alias = dsn
 
     if dsn_uri:
-        uri = urlparse(dsn_uri)
+        from sqlalchemy.engine.url import make_url
+        engine = make_url(dsn_uri)
         if not database:
-            database = uri.path[1:]  # ignore the leading fwd slash
+            database = engine.database  # ignore the leading fwd slash
         if not user:
-            user = unquote(uri.username)
-        if not password and uri.password is not None:
-            password = unquote(uri.password)
+            user = engine.username
+        if not password:
+            password = engine.password
         if not host:
-            host = uri.hostname
+            host = engine.host
         if not port:
-            port = uri.port
+            port = engine.port
 
     if ssh_config_host:
         ssh_config = read_ssh_config(
